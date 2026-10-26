@@ -434,7 +434,8 @@ def main():
     segments.to_csv(OUT / "segment_churn_rates.csv", index=False)
 
     # Score all eligible customers with a model refit to all eligible rows.
-    final_model = build_pipeline(X, best_name.lower().replace(" ", "_"))
+    final_kind = "logistic" if best_name == "Logistic Regression" else "random_forest"
+    final_model = build_pipeline(X, final_kind)
     final_model.fit(X, y)
     all_prob = final_model.predict_proba(X)[:, 1]
     all_pred = (all_prob >= 0.5).astype(int)
