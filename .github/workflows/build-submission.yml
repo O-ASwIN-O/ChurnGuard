@@ -24,11 +24,15 @@ jobs:
         run: python -m pip install --upgrade pip && pip install -r requirements.txt
       - name: Run analysis and generate deliverables
         run: python src/run_analysis.py
+      - name: Package reproducible project and outputs
+        run: |
+          zip -rq ChurnGuard_Full_Project.zip README.md requirements.txt notebook src data figures reports presentation .github
       - name: Upload generated submission files
         uses: actions/upload-artifact@v4
         with:
           name: churnguard-submission-artifacts
           path: |
+            ChurnGuard_Full_Project.zip
             data/processed/*.csv
             data/processed/*.json
             figures/*.png
