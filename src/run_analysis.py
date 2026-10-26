@@ -514,28 +514,32 @@ def main():
     prediction_output["SCORING_NOTE"] = "In-sample scores from model refit on eligible population; use holdout file for validation metrics."
     prediction_output.to_csv(OUT / "customer_churn_predictions.csv", index=False)
 
-    # Illustrative retention sensitivity scenarios for the top-risk 20%.
-    score_frame = pd.DataFrame({"prob": all_prob})
-    cutoff_risk = float(score_frame["prob"].quantile(0.80))
-    targeted = all_prob >= cutoff_risk
+    # Illustrative retention sensitivity scenarios on the held-out validation cohort.
+    # Using held-out probabilities avoids basing the scenario on in-sample scores.
+    validation_n = len(holdout_prob)
+    cutoff_risk = float(np.quantile(holdout_prob, 0.80))
+    targeted = holdout_prob >= cutoff_risk
     if not targeted.any():
-        targeted[np.argmax(all_prob)] = True
-    baseline_expected = float(all_prob.sum())
+        targeted[np.argmax(holdout_prob)] = True
+    baseline_expected = float(holdout_prob.sum())
     scenario_rows = []
     for reduction in [0.05, 0.10, 0.15]:
-        saved = float((all_prob[targeted] * reduction).sum())
+        saved = float((holdout_prob[targeted] * reduction).sum())
         scenario_rows.append({
+            "Scenario_Population": "Held-out signup-cohort validation population",
+            "Scenario_Population_N": validation_n,
             "Targeting_Rule": "Top 20% predicted risk (quantile cutoff; ties included)",
             "Targeted_Pct": 100 * float(targeted.mean()),
             "Targeted_Customers": int(targeted.sum()),
             "Assumed_Relative_Risk_Reduction": reduction,
             "Baseline_Expected_Churn_Customers": baseline_expected,
+            "Validation_Observed_Churn_Customers": int(y_test.sum()),
             "Expected_Churn_Reduction_Customers": saved,
             "Scenario_Expected_Churn_Customers": baseline_expected - saved,
-            "Baseline_Avg_Risk_Pct": float(all_prob.mean() * 100),
-            "Scenario_Avg_Risk_Pct": float((baseline_expected - saved) / n * 100),
-            "Risk_Reduction_Pct_Points": float(saved / n * 100),
-            "Assumption_Note": "Illustrative relative-risk reduction assumption; not a causal estimate or measured treatment effect.",
+            "Baseline_Avg_Risk_Pct": float(holdout_prob.mean() * 100),
+            "Scenario_Avg_Risk_Pct": float((baseline_expected - saved) / validation_n * 100),
+            "Risk_Reduction_Pct_Points": float(saved / validation_n * 100),
+            "Assumption_Note": "Illustrative relative-risk reduction applied to held-out model probabilities; not a causal estimate or measured treatment effect.",
         })
     scenario = pd.DataFrame(scenario_rows)
     scenario.to_csv(OUT / "retention_scenario.csv", index=False)
@@ -618,11 +622,11 @@ Observed historical churn rates are calculated by membership tier, city and sign
 Full breakdown: \`data/processed/segment_churn_rates.csv\`.
 
 ### 10. Retention scenario
-The scenario targets customers in the top-risk fifth by predicted probability and assumes a relative risk reduction of 5%, 10% or 15% among targeted customers. The scenario values are computed from model probabilities.
+The scenario targets customers in the top-risk fifth of the held-out signup-cohort validation population and assumes a relative risk reduction of 5%, 10% or 15% among targeted customers. The scenario is computed from held-out model probabilities rather than in-sample predictions.
 
 {scenario_text}
 
-These figures are an illustrative sensitivity analysis, not a measured treatment effect. The dataset provides no experimentally measured coupon effect or offer cost, so causal impact and ROI cannot be claimed. A controlled pilot is needed.
+These figures are an illustrative sensitivity analysis applied to held-out signup-cohort probabilities, not a measured treatment effect. The dataset provides no experimentally measured coupon effect or offer cost, so causal impact and ROI cannot be claimed. A controlled pilot is needed.
 
 ### 11. Recommendations
 1. Pilot proactive outreach/coupons for the highest-risk customers and compare incremental retention with a randomised control group.
