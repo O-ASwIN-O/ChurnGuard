@@ -585,15 +585,30 @@ def main():
 
     # Write report from actual generated outputs.
     best = metrics.loc[metrics["Model"] == best_name].iloc[0]
-    metric_table = metrics.round(3).to_markdown(index=False)
-    ablation_table = ablation.round(3).to_markdown(index=False)
-    top_table = importance.head(10).round(4).to_markdown(index=False)
+    metric_labels = {
+        "Threshold": "Decision threshold", "N": "Customers", "Precision": "Churn precision",
+        "Recall": "Churn recall", "F1": "Churn F1",
+        "PR_AUC_Average_Precision": "PR-AUC / average precision", "ROC_AUC": "ROC-AUC",
+    }
+    metric_table = metrics.rename(columns=metric_labels).round(3).to_markdown(index=False)
+    ablation_table = ablation.rename(columns=metric_labels).round(3).to_markdown(index=False)
+    top_table = importance.rename(columns={"Feature": "Input feature", "Importance": "Global importance"}).head(10).round(4).to_markdown(index=False)
     segment_columns = ["Segment", "Customers", "Churned", "Churn_Rate_Pct"]
-    tier_table_text = segments[segments["Segment_Type"] == "Membership tier"][segment_columns].round(2).to_markdown(index=False)
-    city_table_text = segments[segments["Segment_Type"] == "City"][segment_columns].sort_values("Churn_Rate_Pct", ascending=False).round(2).to_markdown(index=False)
-    cohort_table_text = segments[segments["Segment_Type"] == "Signup quarter"][segment_columns].sort_values("Segment").round(2).to_markdown(index=False)
+    segment_labels = {"Churn_Rate_Pct": "Churn rate (%)"}
+    tier_table_text = segments[segments["Segment_Type"] == "Membership tier"][segment_columns].rename(columns=segment_labels).round(2).to_markdown(index=False)
+    city_table_text = segments[segments["Segment_Type"] == "City"][segment_columns].sort_values("Churn_Rate_Pct", ascending=False).rename(columns=segment_labels).round(2).to_markdown(index=False)
+    cohort_table_text = segments[segments["Segment_Type"] == "Signup quarter"][segment_columns].sort_values("Segment").rename(columns=segment_labels).round(2).to_markdown(index=False)
     scenario_columns = ["Targeted_Customers", "Assumed_Relative_Risk_Reduction", "Expected_Churn_Reduction_Customers", "Scenario_Expected_Churn_Customers", "Baseline_Avg_Risk_Pct", "Scenario_Avg_Risk_Pct"]
-    scenario_text = scenario[scenario_columns].round(3).to_markdown(index=False)
+    scenario_text_df = scenario[scenario_columns].rename(columns={
+        "Targeted_Customers": "Targeted customers",
+        "Assumed_Relative_Risk_Reduction": "Assumed relative risk reduction",
+        "Expected_Churn_Reduction_Customers": "Expected churn reduction (modelled)",
+        "Scenario_Expected_Churn_Customers": "Expected churn after action (modelled)",
+        "Baseline_Avg_Risk_Pct": "Mean predicted risk before (%)",
+        "Scenario_Avg_Risk_Pct": "Mean predicted risk after (%)",
+    }).copy()
+    scenario_text_df["Assumed relative risk reduction"] = (scenario_text_df["Assumed relative risk reduction"] * 100).map(lambda v: f"{v:.0f}%")
+    scenario_text = scenario_text_df.round(3).to_markdown(index=False)
     report_text = f"""# ChurnGuard — Final Project Report
 ## Customer Churn Prediction for FreshBasket Retail
 
