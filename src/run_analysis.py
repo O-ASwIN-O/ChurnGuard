@@ -183,6 +183,15 @@ def make_plot_files(df, metrics, importance, segments):
     fig.tight_layout()
     fig.savefig(FIG / "churn_by_city.png", dpi=170)
     plt.close(fig)
+    cohort = segments[segments["Segment_Type"] == "Signup quarter"].sort_values("Segment")
+    fig, ax = plt.subplots(figsize=(9.0, 4.5))
+    ax.plot(cohort["Segment"].astype(str), cohort["Churn_Rate_Pct"], marker="o")
+    ax.set_title("Observed churn rate by signup quarter")
+    ax.set_ylabel("Churn rate (%)")
+    ax.tick_params(axis="x", rotation=40)
+    fig.tight_layout()
+    fig.savefig(FIG / "churn_by_signup_cohort.png", dpi=170)
+    plt.close(fig)
 
     # Ablation results
     if (OUT / "ablation_results.csv").exists():
@@ -295,7 +304,9 @@ def make_presentation(metrics, importance, segments, ablation, scenario, split_i
         return s
     image_slide("7. Model performance", "model_comparison.png", "Cohort-holdout metrics at a fixed 0.50 decision threshold")
     image_slide("8. Main churn drivers", "feature_importance.png", "Global model importance aggregated to original input features; not causal effects")
-    image_slide("9. Segment risk", "churn_by_tier.png", "Observed historical churn rates by membership tier")
+    image_slide("9. Segment risk: membership tier", "churn_by_tier.png", "Observed historical churn rates by membership tier")
+    image_slide("10. Segment risk: city", "churn_by_city.png", "Observed churn rates across cities; small groups need caution")
+    image_slide("11. Segment risk: signup cohort", "churn_by_signup_cohort.png", "Observed churn rates by signup quarter")
     # Retention scenario slide
     r10 = scenario[scenario["Assumed_Relative_Risk_Reduction"] == 0.10]
     if len(r10):
@@ -307,14 +318,14 @@ def make_presentation(metrics, importance, segments, ablation, scenario, split_i
         ]
     else:
         bullets = ["Target high-risk customers with a controlled coupon/outreach pilot.", "Estimate impact under explicit assumptions.", "This is a sensitivity scenario, not a measured causal effect."]
-    content_slide("10. Retention scenario", bullets)
-    content_slide("11. Recommendations and limitations", [
+    content_slide("12. Retention scenario", bullets)
+    content_slide("13. Recommendations and limitations", [
         "Run a controlled retention pilot and compare outcomes against a holdout group before scaling.",
         "Investigate missing Jan–Mar activity records; confirm whether they mean no shopping or missing telemetry.",
         f"Validation calibration warning: mean selected-model risk {validation_mean_risk:.1%} vs observed churn {validation_observed_rate:.1%}; use scores for ranking only until calibrated.",
         "One label window limits genuine out-of-time validation; observational patterns do not establish causality."
     ])
-    content_slide("12. Conclusion and next steps", [
+    content_slide("14. Conclusion and next steps", [
         "Use churn scores to prioritise outreach—not as a final automated decision.",
         "Monitor recall and precision alongside offer cost and incremental retention.",
         "Validate on a future outcome window when new labels become available."
@@ -577,8 +588,12 @@ def main():
     metric_table = metrics.round(3).to_markdown(index=False)
     ablation_table = ablation.round(3).to_markdown(index=False)
     top_table = importance.head(10).round(4).to_markdown(index=False)
-    segment_table_text = segments[segments["Segment_Type"] == "Membership tier"][["Segment", "Customers", "Churned", "Churn_Rate_Pct"]].round(2).to_markdown(index=False)
-    scenario_text = scenario.round(3).to_markdown(index=False)
+    segment_columns = ["Segment", "Customers", "Churned", "Churn_Rate_Pct"]
+    tier_table_text = segments[segments["Segment_Type"] == "Membership tier"][segment_columns].round(2).to_markdown(index=False)
+    city_table_text = segments[segments["Segment_Type"] == "City"][segment_columns].sort_values("Churn_Rate_Pct", ascending=False).round(2).to_markdown(index=False)
+    cohort_table_text = segments[segments["Segment_Type"] == "Signup quarter"][segment_columns].sort_values("Segment").round(2).to_markdown(index=False)
+    scenario_columns = ["Targeted_Customers", "Assumed_Relative_Risk_Reduction", "Expected_Churn_Reduction_Customers", "Scenario_Expected_Churn_Customers", "Baseline_Avg_Risk_Pct", "Scenario_Avg_Risk_Pct"]
+    scenario_text = scenario[scenario_columns].round(3).to_markdown(index=False)
     report_text = f"""# ChurnGuard — Final Project Report
 ## Customer Churn Prediction for FreshBasket Retail
 
@@ -624,7 +639,17 @@ Global feature importance from Random Forest is aggregated back to original inpu
 ### 9. Segment analysis
 Observed historical churn rates are calculated by membership tier, city and signup quarter. These are descriptive comparisons and small group counts should be reviewed before taking action.
 
-{segment_table_text}
+**By membership tier**
+
+{tier_table_text}
+
+**By city**
+
+{city_table_text}
+
+**By signup quarter**
+
+{cohort_table_text}
 
 Full breakdown: \`data/processed/segment_churn_rates.csv\`.
 
