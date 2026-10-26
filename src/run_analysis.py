@@ -328,12 +328,49 @@ def main():
     df["SIGNUP_DATE"] = pd.to_datetime(df["SIGNUP_DATE"], errors="coerce")
     df["TENURE_DAYS"] = (LABEL_DATE - df["SIGNUP_DATE"]).dt.days
 
+    # Derive purchase recency from monthly activity if the source workbook is present.
+    raw_book = ROOT / "data" / "raw" / "FreshBasket_Loyalty_Churn_Dataset.xlsx"
+    if raw_book.exists():
+        try:
+            activity_raw = pd.read_excel(
+                raw_book, sheet_name="fb Monthly Activity", header=1,
+                usecols=["CUSTOMER_ID", "MONTH", "TRANSACTIONS"],
+            ).drop_duplicates()
+            activity_raw["MONTH"] = pd.to_datetime(activity_raw["MONTH"], errors="coerce")
+            pre_purchase = activity_raw[
+                (activity_raw["MONTH"] < LABEL_DATE) &
+                (activity_raw["TRANSACTIONS"] > 0)
+            ]
+            last_purchase = pre_purchase.groupby("CUSTOMER_ID")["MONTH"].max()
+            last_purchase_map = last_purchase.to_dict()
+            df["LAST_ACTIVE_MONTH_PRE"] = df["CUSTOMER_ID"].map(last_purchase_map)
+            last_month = pd.to_datetime(df["LAST_ACTIVE_MONTH_PRE"], errors="coerce")
+            df["MONTHS_SINCE_LAST_PURCHASE_PRE"] = (
+                (LABEL_DATE.year - last_month.dt.year) * 12
+                + (LABEL_DATE.month - last_month.dt.month)
+            )
+            df["NO_PRIOR_PURCHASE_RECORD_FLAG"] = last_month.isna().astype(int)
+            df.drop(columns=["LAST_ACTIVE_MONTH_PRE"], inplace=True)
+        except Exception as exc:
+            warnings.warn(f"Could not derive recency from source workbook: {exc}")
+
     recent_cols = ["RECENT_TRANSACTIONS", "RECENT_SPEND", "RECENT_APP_SESSIONS", "RECENT_SUPPORT_TICKETS"]
     missing_recent = df[recent_cols].isna().all(axis=1)
     df["NO_RECENT_ACTIVITY_RECORDS"] = missing_recent.astype(int)
     # Explicit assumption for model features: no recorded recent activity is encoded as zero.
     # A separate flag preserves the fact that those source rows were absent.
     df[recent_cols] = df[recent_cols].fillna(0)
+
+    # Compare monthly averages in Jan-Mar 2024 with the preceding 12 calendar months.
+    trend_pairs = [
+        ("TRANSACTIONS_PRE", "RECENT_TRANSACTIONS", "TRANSACTIONS_TREND_RECENT_VS_PRIOR"),
+        ("TOTAL_SPEND_PRE", "RECENT_SPEND", "SPEND_TREND_RECENT_VS_PRIOR"),
+        ("APP_SESSIONS_PRE", "RECENT_APP_SESSIONS", "APP_SESSIONS_TREND_RECENT_VS_PRIOR"),
+        ("SUPPORT_TICKETS_PRE", "RECENT_SUPPORT_TICKETS", "SUPPORT_TICKETS_TREND_RECENT_VS_PRIOR"),
+    ]
+    for pre_total, recent_total, trend_name in trend_pairs:
+        prior_twelve_months = (df[pre_total] - df[recent_total]).clip(lower=0)
+        df[trend_name] = (df[recent_total] / 3.0) - (prior_twelve_months / 12.0)
 
     target = df["CHURNED"].astype(int)
     n = len(df)
@@ -551,7 +588,7 @@ The upstream EDA identified exact duplicates, repeated customer-month records, t
 Four January–March features are missing together for {int(missing_recent.sum())} customers. Of those, {int(y[missing_recent].sum())} are labelled churned. The records have no monthly activity entries in that recent period. This run encodes the four missing values as zero and adds a missing-activity flag. The association is strong and may reflect both real disengagement and data-generation/recording behaviour; it should not be interpreted as causal proof.
 
 ### 4. Features
-Features include pre-period totals and averages for transactions, spend, basket size, app sessions, email opens, coupons and support tickets; active months; recent January–March activity; profile/demographic/tier features; and tenure in days as of 1 April 2024. All feature engineering is intended to stop before the target period.
+Features include purchase recency derived from monthly activity before April 2024, pre-period totals/averages, recent January–March activity, recent-vs-prior monthly trend features for spend/transactions/app sessions/support tickets, profile/demographic/tier attributes, and tenure in days as of 1 April 2024. All feature engineering is intended to stop before the target period.
 
 ### 5. Validation design
 Training uses earlier customer signup cohorts; validation uses the latest signup-date cohort. The cutoff was **{split_info['cutoff']}**. Training contained {split_info['train_n']:,} customers (observed churn rate {split_info['train_churn_rate']:.2%}) and the validation cohort contained {split_info['test_n']:,} customers (observed churn rate {split_info['test_churn_rate']:.2%}).
