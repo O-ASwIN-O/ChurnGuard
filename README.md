@@ -1,76 +1,64 @@
 # ChurnGuard — Customer Churn Prediction
 
-## Day 1: Data Understanding, Quality Checks and Initial Feature Engineering
+## Project overview
+ChurnGuard investigates customer churn in FreshBasket Retail's loyalty program. It uses customer profiles and monthly activity observed before the churn-label window to estimate which eligible customers are at risk of churn and to support targeted retention planning.
 
-### 1. Project Overview
+**Target definition:** `CHURNED = 1` means no purchase transactions during April–June 2024 despite earlier purchase history. The prediction features are intended to use data through March 2024 only.
 
-ChurnGuard is a customer churn prediction project for FreshBasket Retail's loyalty program. The objective is to identify customers who may have stopped purchasing and help the business develop targeted customer-retention strategies.
+## Repository structure
+- `notebook/01_eda.ipynb` — data loading, quality checks and feature preparation
+- `notebook/02_eda.ipynb` — exploratory analysis of the customer-level modelling dataset
+- `notebook/03_model_training.ipynb` — baseline and Logistic Regression modelling, threshold comparison and an initial ablation
+- `data/processed/model_eligible.csv` — customer-level modelling data
+- `data/processed/eda_feature_summary.csv` — summary statistics used in EDA
+- `data/processed/day3_model_comparison.csv` — initial Logistic Regression threshold results
 
-The dataset contains customer profiles, monthly shopping activity and churn labels.
+## Current verified results
+The eligible dataset contains 2,225 customers: 1,563 non-churned and 662 churned (29.75% churn rate).
 
-### 2. Dataset Understanding
+An initial stratified random 80/20 split was used for exploration, giving 445 test examples. This is **not** a time-based or cohort-based validation and should not be presented as the final validation design.
 
-The Excel workbook `FreshBasket_Loyalty_Churn_Dataset.xlsx` contains the following relevant sheets:
+On that exploratory split, Logistic Regression at threshold 0.50 achieved:
+- Accuracy: 0.836
+- Churn precision: 0.761
+- Churn recall: 0.652
+- Churn F1: 0.702
 
-- **Customer Profile:** Customer demographics, membership tier, marketing preferences and store preferences.
-- **Monthly Activity:** Monthly transactions, spending, basket value, app sessions, email engagement, coupon redemption and support interactions.
-- **Churn Label:** Customer churn status, observation period, last purchase date and history sufficiency flag.
-- **Glossary and Data Dictionary:** Definitions of the dataset's fields and business terminology.
+At threshold 0.40, the initial results were:
+- Accuracy: 0.825
+- Churn precision: 0.699
+- Churn recall: 0.720
+- Churn F1: 0.709
 
-### 3. Data Quality Checks
+The threshold comparison was made on the same test set, so these metrics are exploratory and are not an unbiased final estimate after threshold selection. PR-AUC, Random Forest, cohort validation, final prediction outputs, driver attribution, segment comparisons and retention-scenario results must be generated and recorded before claiming those requirements are complete.
 
-The following checks were performed:
+## Important data caveat
+Four recent-activity features are missing together for 449 customers. In the current dataset, 442 of those customers are labelled churned and 7 are not. These customers have no recorded activity rows during January–March 2024 in the source table. Treating missing recent activity as zero is an explicit assumption—not proof that the customers had literally zero activity. This signal can dominate prediction and should be examined in sensitivity analysis.
 
-- Identified and removed exact duplicate records.
-- Checked customer IDs and customer-month uniqueness.
-- Investigated conflicting customer-month records.
-- Examined missing values in demographic and churn-related fields.
-- Checked for negative spending, zero spending despite positive transaction counts, and inconsistencies between total spend and average basket value.
-- Checked numeric ranges for selected fields, including age and promotional transaction percentage.
-- Identified customers without recorded pre-churn activity.
+The working dataset excludes insufficient-history customers and two additional customers without recorded pre-label activity. Document these population choices whenever reporting metrics.
 
-Two conflicting customer-month records were investigated. The negative-spend versions were excluded from the modelling activity table because their other recorded fields matched the positive-spend versions. This was a documented data-cleaning decision, not a confirmed correction from the original source.
+## Reproducibility
+Recommended environment: Python 3.11+ with pandas, numpy, matplotlib, seaborn, scikit-learn, openpyxl, jupyter and python-pptx (for presentation generation).
 
-Spending-quality flags were also created to identify records requiring further review. These flags do not establish that every flagged record is incorrect.
+From the repository root, create/activate a virtual environment and install packages:
+```bash
+python -m venv .venv
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install pandas numpy matplotlib seaborn scikit-learn openpyxl jupyter python-pptx
+```
+Open the notebooks from the `notebook/` folder and run cells in order. Relative file paths assume that working directory. Check all displayed outputs after rerunning; notebook outputs committed in GitHub may be from an earlier run.
 
-### 4. Feature Engineering
+## Remaining deliverables to verify before submission
+- Cohort-based validation, with limitations stated (the dataset contains one labelled outcome window)
+- Logistic Regression vs a second ML classifier, including precision, recall, F1, accuracy and PR-AUC
+- Feature importance/driver attribution
+- Churn-rate comparisons by tier, city and signup cohort
+- Demographics-only vs engagement/behaviour ablation
+- Retention scenario with explicit assumptions and sensitivity caveats
+- Customer prediction CSV with customer ID, churn probability, predicted label and key drivers
+- Final report and 10–15 minute presentation
 
-The churn prediction target is based on the absence of transactions during April–June 2024 despite earlier purchase history.
-
-To avoid target-period data leakage, initial predictive activity features were constructed using records before April 2024.
-
-The features include:
-
-- Total transactions and total spending before April 2024.
-- Average monthly transactions, spending and basket value.
-- Average app sessions, email engagement and support tickets.
-- Coupon redemptions and active months.
-- Recent transactions, spending, app sessions and support tickets for January–March 2024.
-
-The recent-period features still require appropriate missing-value handling and validation before model training.
-
-### 5. Modelling Population
-
-Customers flagged as having insufficient history were excluded from the primary modelling population. Two additional customers with sufficient-history flags but no recorded pre-April activity were also excluded from the current eligible dataset.
-
-| Metric | Result |
-|---|---:|
-| Unique customer profiles after exact deduplication | 2,600 |
-| Eligible customers after exclusions | 2,225 |
-| Non-churned customers | 1,563 |
-| Churned customers | 662 |
-| Churn rate in eligible population | 29.75% |
-
-### 6. Day 1 Outcome
-
-Day 1 established the dataset structure, performed initial quality checks, documented data-cleaning decisions and created initial pre-period activity features.
-
-### 7. Remaining Work
-
-- Complete missing-value analysis and treatment.
-- Perform exploratory data analysis and visualize churn patterns.
-- Build baseline and machine-learning models.
-- Evaluate models using appropriate classification metrics.
-- Interpret the results and develop customer-retention recommendations.
-
-**Project status:** Day 1 completed; exploratory data analysis is the next stage.
+## Limitations
+This is a retrospective analysis of a synthetic/assessment dataset and should not be treated as a deployed production churn system. A single label window limits robust temporal validation. Observational feature relationships do not prove causation, and an intervention scenario is not a measured causal treatment effect.
