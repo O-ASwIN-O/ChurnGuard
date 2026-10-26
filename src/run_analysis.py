@@ -196,7 +196,7 @@ def make_plot_files(df, metrics, importance, segments):
         fig.savefig(FIG / "feature_ablation.png", dpi=170)
         plt.close(fig)
 
-def make_presentation(metrics, importance, segments, ablation, scenario, split_info, n_customers, n_churned, churn_rate):
+def make_presentation(metrics, importance, segments, ablation, scenario, split_info, n_customers, n_churned, churn_rate, validation_mean_risk, validation_observed_rate):
     try:
         from pptx import Presentation
         from pptx.util import Inches, Pt
@@ -279,7 +279,7 @@ def make_presentation(metrics, importance, segments, ablation, scenario, split_i
     s = prs.slides.add_slide(prs.slide_layouts[6]); add_bg(s); title(s, "5. Cohort-based validation", "Hold out customers from the latest signup-date cohort")
     textbox(s, f"Cut-off date: {split_info['cutoff']}", 0.85, 1.95, 11.4, 0.55, 22, RGBColor(65,208,204), True)
     textbox(s, f"Training cohort: {split_info['train_n']:,} customers ({split_info['train_churn_rate']:.1%} churn)  |  Validation: {split_info['test_n']:,} customers ({split_info['test_churn_rate']:.1%} churn)", 0.85, 2.65, 11.7, 0.6, 17)
-    textbox(s, f"Calibration check: selected-model mean risk {holdout_prob.mean():.1%} vs observed validation churn {y_test.mean():.1%}.", 0.85, 3.25, 11.4, 0.45, 16, RGBColor(65,208,204), True)
+    textbox(s, f"Calibration check: selected-model mean risk {validation_mean_risk:.1%} vs observed validation churn {validation_observed_rate:.1%}.", 0.85, 3.25, 11.4, 0.45, 16, RGBColor(65,208,204), True)
     textbox(s, "Caveat: all customers share the same Apr–Jun 2024 label window. Signup-cohort validation is not the same as testing on a later outcome period; the score gap also means absolute probabilities need further calibration.", 0.85, 3.85, 11.4, 1.1, 17, RGBColor(240,215,165))
     content_slide("6. Model comparison", [
         f"Best cohort-holdout PR-AUC (average precision): {metrics.loc[metrics['PR_AUC_Average_Precision'].idxmax(), 'Model']} ({metrics['PR_AUC_Average_Precision'].max():.3f}).",
@@ -311,7 +311,7 @@ def make_presentation(metrics, importance, segments, ablation, scenario, split_i
     content_slide("11. Recommendations and limitations", [
         "Run a controlled retention pilot and compare outcomes against a holdout group before scaling.",
         "Investigate missing Jan–Mar activity records; confirm whether they mean no shopping or missing telemetry.",
-        f"Validation calibration warning: mean selected-model risk {holdout_prob.mean():.1%} vs observed churn {y_test.mean():.1%}; use scores for ranking only until calibrated.",
+        f"Validation calibration warning: mean selected-model risk {validation_mean_risk:.1%} vs observed churn {validation_observed_rate:.1%}; use scores for ranking only until calibrated.",
         "One label window limits genuine out-of-time validation; observational patterns do not establish causality."
     ])
     content_slide("12. Conclusion and next steps", [
@@ -660,7 +660,7 @@ The script regenerates cohort metrics, feature importance, ablation results, seg
     (REPORTS / "FINAL_REPORT.md").write_text(report_text, encoding="utf-8")
     (REPORTS / "ANALYSIS_SUMMARY.json").write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
 
-    make_presentation(metrics[metrics["Model"] != "Majority-class baseline"].reset_index(drop=True), importance, segments, ablation, scenario, split_info, n, n_churned, churn_rate)
+    make_presentation(metrics[metrics["Model"] != "Majority-class baseline"].reset_index(drop=True), importance, segments, ablation, scenario, split_info, n, n_churned, churn_rate, float(holdout_prob.mean()), float(y_test.mean()))
 
     print("ChurnGuard analysis completed.")
     print(f"Population: {n} customers; churn rate: {churn_rate:.2%}")
