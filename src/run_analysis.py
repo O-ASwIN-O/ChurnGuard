@@ -222,14 +222,10 @@ def make_presentation(metrics, importance, segments, ablation, scenario, split_i
     grey = RGBColor(75, 86, 102)
 
     def add_bg(slide, color=navy):
-        shape = slide.shapes.add_shape(1, 0, 0, prs.slide_width, prs.slide_height)
-        shape.fill.solid()
-        shape.fill.fore_color.rgb = color
-        shape.line.fill.background()
-        # send background behind everything by moving to first in spTree
-        sp = shape._element
-        sp.getparent().remove(sp)
-        slide.shapes._spTree.insert(2, sp)
+        # Use the slide's own background rather than a full-canvas rectangle.
+        # This keeps the visual style while avoiding false overflow warnings.
+        slide.background.fill.solid()
+        slide.background.fill.fore_color.rgb = color
 
     def textbox(slide, text, x, y, w, h, size=22, color=RGBColor(255,255,255), bold=False):
         box = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
