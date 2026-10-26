@@ -278,8 +278,9 @@ def make_presentation(metrics, importance, segments, ablation, scenario, split_i
     ])
     s = prs.slides.add_slide(prs.slide_layouts[6]); add_bg(s); title(s, "5. Cohort-based validation", "Hold out customers from the latest signup-date cohort")
     textbox(s, f"Cut-off date: {split_info['cutoff']}", 0.85, 1.95, 11.4, 0.55, 22, RGBColor(65,208,204), True)
-    textbox(s, f"Training cohort: {split_info['train_n']:,} customers  |  Validation cohort: {split_info['test_n']:,} customers", 0.85, 2.65, 11.7, 0.6, 19)
-    textbox(s, "Caveat: all customers share the same Apr–Jun 2024 label window. Signup-cohort validation is not the same as testing on a later outcome period.", 0.85, 3.55, 11.4, 1.1, 19, RGBColor(240,215,165))
+    textbox(s, f"Training cohort: {split_info['train_n']:,} customers ({split_info['train_churn_rate']:.1%} churn)  |  Validation: {split_info['test_n']:,} customers ({split_info['test_churn_rate']:.1%} churn)", 0.85, 2.65, 11.7, 0.6, 17)
+    textbox(s, f"Calibration check: selected-model mean risk {holdout_prob.mean():.1%} vs observed validation churn {y_test.mean():.1%}.", 0.85, 3.25, 11.4, 0.45, 16, RGBColor(65,208,204), True)
+    textbox(s, "Caveat: all customers share the same Apr–Jun 2024 label window. Signup-cohort validation is not the same as testing on a later outcome period; the score gap also means absolute probabilities need further calibration.", 0.85, 3.85, 11.4, 1.1, 17, RGBColor(240,215,165))
     content_slide("6. Model comparison", [
         f"Best cohort-holdout PR-AUC (average precision): {metrics.loc[metrics['PR_AUC_Average_Precision'].idxmax(), 'Model']} ({metrics['PR_AUC_Average_Precision'].max():.3f}).",
         f"Best cohort-holdout F1: {metrics.loc[metrics['F1'].idxmax(), 'Model']} ({metrics['F1'].max():.3f}).",
@@ -310,6 +311,7 @@ def make_presentation(metrics, importance, segments, ablation, scenario, split_i
     content_slide("11. Recommendations and limitations", [
         "Run a controlled retention pilot and compare outcomes against a holdout group before scaling.",
         "Investigate missing Jan–Mar activity records; confirm whether they mean no shopping or missing telemetry.",
+        f"Validation calibration warning: mean selected-model risk {holdout_prob.mean():.1%} vs observed churn {y_test.mean():.1%}; use scores for ranking only until calibrated.",
         "One label window limits genuine out-of-time validation; observational patterns do not establish causality."
     ])
     content_slide("12. Conclusion and next steps", [
@@ -553,6 +555,9 @@ def main():
         "churned_among_missing_recent_activity": int(y[missing_recent].sum()),
         "cohort_validation": split_info,
         "selected_model_by_holdout_pr_auc": best_name,
+        "validation_observed_churn_rate": float(y_test.mean()),
+        "validation_mean_predicted_risk": float(holdout_prob.mean()),
+        "validation_calibration_gap_pp": float((holdout_prob.mean() - y_test.mean()) * 100),
         "metrics": metrics.to_dict(orient="records"),
         "ablation": ablation.to_dict(orient="records"),
         "top_global_drivers": importance.head(10).to_dict(orient="records"),
@@ -604,6 +609,8 @@ The majority-class baseline, Logistic Regression and Random Forest were evaluate
 
 {metric_table}
 
+**Probability calibration caveat:** the selected model's average predicted validation risk is {float(holdout_prob.mean()):.2%}, versus an observed validation churn rate of {float(y_test.mean()):.2%}. This discrepancy means the absolute probabilities should not yet be interpreted as calibrated real-world churn likelihoods. Use scores cautiously for ranking; recalibrate and validate on additional labelled periods before operational use.
+
 ### 7. Feature-group ablation
 The ablation compares profile/demographics only, behaviour/engagement/support only, and all feature groups on the same signup-cohort holdout.
 
@@ -626,7 +633,7 @@ The scenario targets customers in the top-risk fifth of the held-out signup-coho
 
 {scenario_text}
 
-These figures are an illustrative sensitivity analysis applied to held-out signup-cohort probabilities, not a measured treatment effect. The dataset provides no experimentally measured coupon effect or offer cost, so causal impact and ROI cannot be claimed. A controlled pilot is needed.
+These figures are an illustrative sensitivity analysis applied to held-out signup-cohort probabilities, not a measured treatment effect. Because the selected model's mean validation risk ({float(holdout_prob.mean()):.2%}) differs from the observed validation churn rate ({float(y_test.mean()):.2%}), the expected counts are not calibrated forecasts and should be treated only as scenario arithmetic until calibration is improved. The dataset provides no experimentally measured coupon effect or offer cost, so causal impact and ROI cannot be claimed. A controlled pilot is needed.
 
 ### 11. Recommendations
 1. Pilot proactive outreach/coupons for the highest-risk customers and compare incremental retention with a randomised control group.
