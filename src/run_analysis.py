@@ -381,6 +381,11 @@ def main():
         prior_twelve_months = (df[pre_total] - df[recent_total]).clip(lower=0)
         df[trend_name] = (df[recent_total] / 3.0) - (prior_twelve_months / 12.0)
 
+    # Save the actual feature-complete modelling table used by this run.
+    # It includes the target for evaluation, all engineered features, and the
+    # NO_RECENT_ACTIVITY_RECORDS indicator before labels are removed from X.
+    df.to_csv(OUT / "final_customer_modeling_dataset.csv", index=False)
+
     target = df["CHURNED"].astype(int)
     n = len(df)
     n_churned = int(target.sum())
