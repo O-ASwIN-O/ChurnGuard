@@ -10,6 +10,7 @@ ChurnGuard is a reproducible Python project that analyses FreshBasket Retail loy
 
 ### Source code
 - `src/run_analysis.py` — end-to-end data preparation, feature engineering, cohort validation, model evaluation, driver analysis, segment analysis, retention scenario, charts and report generation.
+- `src/score_customers.py` — score prepared customer CSV files with the saved notebook model and add a recommended action.
 - `notebook/01_eda.ipynb` — data loading, quality checks and feature preparation.
 - `notebook/02_eda.ipynb` — churn exploratory analysis.
 - `notebook/03_model_training.ipynb` — exploratory training and ablation work.
@@ -26,7 +27,7 @@ These files are produced by `src/run_analysis.py`. The GitHub Actions workflow p
 - `cohort_model_comparison.csv` — baseline, Logistic Regression and Random Forest metrics.
 - `cohort_confusion_matrix.csv` — held-out confusion matrix.
 - `validation_cohort_predictions.csv` — validation predictions and observed labels.
-- `customer_churn_predictions.csv` — customer-level risk score, predicted label and diagnostic driver notes.
+- `customer_churn_predictions.csv` — customer-level risk score, predicted label, recommended action and diagnostic driver notes. The action follows the pipeline's 0.50 classification threshold.
 - `feature_importance.csv` — Random Forest global feature importance.
 - `ablation_results.csv` — comparisons across feature groups.
 - `segment_churn_rates.csv` — observed churn by membership tier, city and signup cohort.
@@ -86,3 +87,17 @@ At a threshold of 0.50, Random Forest has higher precision and PR-AUC but lower 
 ## GitHub Actions
 
 On pushes to `main` that change source/project files, the workflow installs dependencies, runs the analysis, uploads a backup artifact and commits generated CSV/JSON outputs, PNG charts and report files to `main`. You can also start it manually from the repository's **Actions** tab. Generated output commits do not trigger an endless workflow loop.
+
+## Notebook model and local customer scoring
+
+The notebooks also contain a separate logistic-regression evaluation using a stratified random 60/20/20 train/validation/test split. Its provisional threshold is 0.399586, selected by maximum validation F1. This is distinct from the signup-cohort evaluation in `src/run_analysis.py`; the random split is not a future-period validation. The test-set metrics and capacity scenarios are saved in `data/processed/day4_holdout_metrics.csv` and `data/processed/day4_capacity_analysis.csv`.
+
+Run all cells in `notebook/03_model_training.ipynb` to recreate the notebook model and its metadata. This writes `outputs/churnguard_model.joblib` and `outputs/churnguard_model_metadata.json`. The notebook also saves one example input/output and a full in-sample customer score file under `outputs/`; the in-sample scores are not evaluation results.
+
+To score a new CSV, include the same model input columns as `data/processed/model_eligible.csv` (excluding the churn target and history flag), then run from the repository root:
+
+```powershell
+python src/score_customers.py --input path\to\new_customer_features.csv --output outputs\new_customer_scores.csv
+```
+
+The scorer adds a `RECOMMENDED_ACTION`: at or above its saved threshold it suggests **Send a personalized coupon**; below it suggests **Continue regular engagement**. This is a simple model-based recommendation, not an automatic coupon send or eligibility check. The notebook's risk scores are not independently validated for operational decisions; test on a later labeled period and run a controlled pilot before using them in a campaign.

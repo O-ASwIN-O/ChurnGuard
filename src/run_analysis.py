@@ -523,6 +523,11 @@ def main():
     prediction_output = df[["CUSTOMER_ID"]].copy()
     prediction_output["CHURN_PROBABILITY"] = all_prob
     prediction_output["PREDICTED_CHURNED"] = all_pred
+    prediction_output["RECOMMENDED_ACTION"] = np.where(
+        all_pred == 1,
+        "Send a personalized coupon",
+        "Continue regular engagement",
+    )
     prediction_output["ACTUAL_CHURNED"] = y
     prediction_output["KEY_DRIVERS_SENSITIVITY"] = keys
     prediction_output["SCORING_NOTE"] = "In-sample scores from model refit on eligible population; use holdout file for validation metrics."

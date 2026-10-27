@@ -1,0 +1,4 @@
+Targeted_share,Customers_targeted,Precision_at_capacity,Churners_captured,Churn_recall_at_capacity
+0.1,45,1.0,45,0.3409090909090909
+0.2,89,0.9887640449438202,88,0.6666666666666666
+0.3,134,0.8805970149253731,118,0.8939393939393939

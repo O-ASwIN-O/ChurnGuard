@@ -1,0 +1,2 @@
+Selected_threshold,Validation_F1,Validation_customers,Test_customers,Selection_method
+0.39958606252689355,0.9348659003826418,445,445,maximum validation F1
