@@ -1,4 +1,4 @@
-name: Build ChurnGuard submission artifacts
+name: Build ChurnGuard analysis outputs
 
 on:
   push:
@@ -7,8 +7,7 @@ on:
       - 'data/processed/**'
       - 'figures/**'
       - 'reports/**'
-      - 'presentation/ChurnGuard_Final_Presentation.pptx'
-      - 'presentation/ANALYSIS_SUMMARY.json'
+      - 'presentation/**'
   workflow_dispatch:
 
 permissions:
@@ -32,31 +31,31 @@ jobs:
         run: python -m pip install --upgrade pip && pip install -r requirements.txt
       - name: Run analysis and generate deliverables
         run: python src/run_analysis.py
-      - name: Package reproducible project and outputs
+      - name: Package code and analysis outputs (no slides)
         run: |
-          zip -rq ChurnGuard_Full_Project.zip README.md requirements.txt notebook src data figures reports presentation .github
-      - name: Upload generated submission files
+          zip -rq ChurnGuard_Code_and_Outputs.zip README.md requirements.txt notebook src data figures reports .github
+      - name: Upload backup artifact
         uses: actions/upload-artifact@v4
         with:
-          name: churnguard-submission-artifacts
+          name: churnguard-code-and-analysis-outputs
           path: |
-            ChurnGuard_Full_Project.zip
+            ChurnGuard_Code_and_Outputs.zip
             data/processed/*.csv
             data/processed/*.json
             figures/*.png
             reports/FINAL_REPORT.md
             reports/ANALYSIS_SUMMARY.json
-            presentation/ChurnGuard_Final_Presentation.pptx
           if-no-files-found: error
           retention-days: 14
-      - name: Commit generated deliverables to repository
+      - name: Commit generated analysis outputs to main
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f data/processed/*.csv data/processed/*.json figures/*.png reports/FINAL_REPORT.md reports/ANALYSIS_SUMMARY.json presentation/ChurnGuard_Final_Presentation.pptx
+          git add -f data/processed/*.csv data/processed/*.json figures/*.png reports/FINAL_REPORT.md reports/ANALYSIS_SUMMARY.json
+          git rm -f --ignore-unmatch presentation/ChurnGuard_Final_Presentation.pptx
           if git diff --cached --quiet; then
-            echo "Generated deliverables are already up to date."
+            echo "Analysis outputs are already up to date."
           else
-            git commit -m "Publish generated ChurnGuard analysis deliverables"
+            git commit -m "Publish ChurnGuard code outputs and analysis results"
             git push
           fi
