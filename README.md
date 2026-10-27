@@ -1,31 +1,57 @@
 # ChurnGuard — Customer Churn Prediction
 
-## Project overview
-ChurnGuard analyses FreshBasket Retail loyalty customers and generates risk rankings to support retention planning.
+ChurnGuard is a reproducible Python project that analyses FreshBasket Retail loyalty customers, compares churn classifiers, generates customer-level risk rankings, and prepares evidence-based retention recommendations.
 
-**Target:** `CHURNED = 1` means no purchase transactions during April–June 2024 despite earlier purchase history. Predictive activity inputs are intended to end before 1 April 2024.
+## Business target
 
-## Repository structure
-- `notebook/01_eda.ipynb` — data loading, quality checks and feature preparation
-- `notebook/02_eda.ipynb` — churn EDA and customer-level exploratory analysis
-- `notebook/03_model_training.ipynb` — exploratory random split, Logistic Regression and early ablation
-- `src/run_analysis.py` — reproducible end-to-end modeling, validation and deliverable-generation script
-- `requirements.txt` — Python dependencies
-- `data/processed/model_eligible.csv` — initial customer-level dataset
-- `data/processed/final_customer_modeling_dataset.csv` — final feature-complete modeling table including recency and recent-vs-prior trends
-- `data/processed/cohort_model_comparison.csv` — baseline, Logistic Regression and Random Forest validation metrics
-- `data/processed/ablation_results.csv` — profile-only, behaviour-only and all-feature comparisons
-- `data/processed/feature_importance.csv` — Random Forest global feature importance
-- `data/processed/segment_churn_rates.csv` — churn rates by tier, city and signup quarter
-- `data/processed/customer_churn_predictions.csv` — customer-level scores, predicted label and local sensitivity notes
-- `data/processed/validation_cohort_predictions.csv` — held-out cohort scores with observed labels
-- `data/processed/retention_scenario.csv` — illustrative risk-reduction sensitivity assumptions
-- `reports/FINAL_REPORT.md` — generated project report
-- `presentation/ChurnGuard_Final_Presentation.pptx` — generated presentation
-- `figures/` — analysis charts used in the report and deck
+`CHURNED = 1` means a customer had zero purchase transactions during April–June 2024 despite having purchase history earlier in the observation window. Predictive activity features are built from information before 1 April 2024.
 
-## Run the complete analysis
-From the repository root:
+## Repository contents
+
+### Source code
+- `src/run_analysis.py` — end-to-end data preparation, feature engineering, cohort validation, model evaluation, driver analysis, segment analysis, retention scenario, charts and report generation.
+- `notebook/01_eda.ipynb` — data loading, quality checks and feature preparation.
+- `notebook/02_eda.ipynb` — churn exploratory analysis.
+- `notebook/03_model_training.ipynb` — exploratory training and ablation work.
+- `requirements.txt` — Python dependencies.
+- `.github/workflows/build-submission.yml` — runs the analysis and commits generated analysis outputs to this repository.
+
+### Generated outputs
+
+These files are produced by `src/run_analysis.py`. The GitHub Actions workflow publishes them to `main` after a successful run, so they are available as ordinary repository files, not only as temporary workflow artifacts.
+
+**Customer-level datasets and predictions — `data/processed/`**
+- `final_customer_modeling_dataset.csv` — final customer feature table, including recency and recent-versus-prior trends.
+- `cohort_validation_design.json` — validation split details.
+- `cohort_model_comparison.csv` — baseline, Logistic Regression and Random Forest metrics.
+- `cohort_confusion_matrix.csv` — held-out confusion matrix.
+- `validation_cohort_predictions.csv` — validation predictions and observed labels.
+- `customer_churn_predictions.csv` — customer-level risk score, predicted label and diagnostic driver notes.
+- `feature_importance.csv` — Random Forest global feature importance.
+- `ablation_results.csv` — comparisons across feature groups.
+- `segment_churn_rates.csv` — observed churn by membership tier, city and signup cohort.
+- `retention_scenario.csv` — illustrative retention sensitivity assumptions.
+- `analysis_summary.json` — machine-readable summary of the analysis.
+
+**Charts — `figures/`**
+- `churn_distribution.png`
+- `model_comparison.png`
+- `feature_importance.png`
+- `churn_by_tier.png`
+- `churn_by_city.png`
+- `churn_by_signup_cohort.png`
+- `feature_ablation.png` (created when the ablation output is available)
+
+**Written results — `reports/`**
+- `FINAL_REPORT.md` — methodology, results, interpretation, limitations and recommendations.
+- `ANALYSIS_SUMMARY.json` — summary metrics in JSON format.
+
+Presentation files are intentionally not committed to this repository. The repository focuses on code, datasets, charts, model outputs and the written analysis report.
+
+## Run locally
+
+From the repository root, using PowerShell:
+
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
@@ -34,26 +60,29 @@ pip install -r requirements.txt
 python src/run_analysis.py
 ```
 
-The script regenerates the cohort metrics, customer-level modeling table, predictions, driver analysis, ablation, segment tables, retention scenario, charts, report and PowerPoint. A GitHub Actions workflow also runs the script and uploads the generated files as the `churnguard-submission-artifacts` artifact.
+The script regenerates the analysis tables, model predictions, feature impact and ablation results, segment tables, retention scenario, charts and report.
 
-## Verified validation results
-The eligible dataset contains **2,225 customers**, with **662 labelled churned** (29.75%). A signup-cohort holdout uses 1,780 earlier-cohort customers for training and 445 later-signup-cohort customers for validation (cutoff 17 July 2023).
+## Verified cohort-validation metrics
+
+The eligible modelling data contains **2,225 customers**, including **662 labelled churned** (29.75%). The signup-cohort split uses 1,780 earlier-cohort customers for training and 445 later-signup-cohort customers for validation, with a cutoff of 17 July 2023.
 
 | Model | Accuracy | Churn precision | Churn recall | F1 | PR-AUC (average precision) |
 |---|---:|---:|---:|---:|---:|
 | Logistic Regression | 0.897 | 0.510 | 0.553 | 0.531 | 0.600 |
 | Random Forest | 0.933 | 0.840 | 0.447 | 0.583 | 0.699 |
 
-Random Forest has the higher PR-AUC and precision at threshold 0.50, but lower recall than Logistic Regression. Metric choice should reflect the relative cost of missed churners and unnecessary offers.
+At a threshold of 0.50, Random Forest has higher precision and PR-AUC but lower recall than Logistic Regression. Threshold choice should reflect the relative costs of missed churners and unnecessary outreach.
 
-## Important limitations and assumptions
-- All labels refer to the same April–June 2024 outcome window. This is a signup-cohort split, **not** a true future-outcome temporal test.
-- The validation cohort has 10.56% observed churn, versus 34.55% in training. Selected-model mean predicted risk is 20.23%, so scores are **not calibrated probabilities** and should be treated primarily as risk rankings.
-- Four recent-activity features are missing together for 449 customers; 442 of those have the churn label. The script encodes absent recent records as zero and adds a missing-activity flag. Confirm whether missing rows mean no activity or an upstream data issue.
-- Retention scenarios apply assumed 5%, 10% and 15% relative risk reductions. They are sensitivity calculations, not measured causal effects or ROI.
-- Driver importance and local sensitivity explain model behaviour; they do not prove causation.
-- The all-customer prediction file is scored by a model refitted on all eligible records, so those scores are in-sample. Use the held-out prediction file for validation discussion.
-- The source workbook includes a fictional/assessment dataset. Confirm assessment sharing terms before redistributing the raw workbook publicly.
+## Limitations and assumptions
 
-## Deliverables checklist
-The repository and generated artifact contain the EDA notebooks, feature-complete modelling table, cohort model metrics, prediction files, feature impact analysis, tier/city/signup-quarter comparisons, ablation analysis, retention scenario, report and 14-slide presentation. See `reports/FINAL_REPORT.md` for methodology and caveats.
+- All labels use the same April–June 2024 outcome window. The signup-cohort split is **not** a true future-outcome temporal test.
+- The validation cohort has 10.56% observed churn, versus 34.55% in training. The selected model's mean predicted risk is 20.23%; scores are **not calibrated probabilities** and should primarily be treated as risk rankings.
+- Four recent-activity features are jointly missing for 449 customers; 442 of those have the churn label. The pipeline encodes absent recent records as zero and adds a missing-activity flag. This pattern needs investigation before operational use.
+- Retention scenarios use assumed 5%, 10% and 15% relative risk reductions. They are sensitivity calculations, not measured treatment effects or ROI.
+- Feature importance and local sensitivity notes explain model behaviour; they do not prove causation.
+- `customer_churn_predictions.csv` is scored by a model refitted on all eligible records, so those scores are in-sample. Use `validation_cohort_predictions.csv` for evaluation discussion.
+- Check the assessment's terms before redistributing the source workbook outside the project.
+
+## GitHub Actions
+
+On pushes to `main` that change source/project files, the workflow installs dependencies, runs the analysis, uploads a backup artifact and commits generated CSV/JSON outputs, PNG charts and report files to `main`. You can also start it manually from the repository's **Actions** tab. Generated output commits do not trigger an endless workflow loop.
