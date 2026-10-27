@@ -3,10 +3,16 @@ name: Build ChurnGuard submission artifacts
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'data/processed/**'
+      - 'figures/**'
+      - 'reports/**'
+      - 'presentation/ChurnGuard_Final_Presentation.pptx'
+      - 'presentation/ANALYSIS_SUMMARY.json'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -15,6 +21,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -41,3 +49,14 @@ jobs:
             presentation/ChurnGuard_Final_Presentation.pptx
           if-no-files-found: error
           retention-days: 14
+      - name: Commit generated deliverables to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f data/processed/*.csv data/processed/*.json figures/*.png reports/FINAL_REPORT.md reports/ANALYSIS_SUMMARY.json presentation/ChurnGuard_Final_Presentation.pptx
+          if git diff --cached --quiet; then
+            echo "Generated deliverables are already up to date."
+          else
+            git commit -m "Publish generated ChurnGuard analysis deliverables"
+            git push
+          fi
