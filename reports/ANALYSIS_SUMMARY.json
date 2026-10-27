@@ -1,0 +1,151 @@
+{
+  "eligible_customers": 2225,
+  "churned_customers": 662,
+  "observed_churn_rate": 0.29752808988764046,
+  "missing_recent_activity_rows": 449,
+  "churned_among_missing_recent_activity": 442,
+  "cohort_validation": {
+    "cutoff": "2023-07-17",
+    "train_n": 1780,
+    "test_n": 445,
+    "train_churn_rate": 0.3455056179775281,
+    "test_churn_rate": 0.10561797752808989,
+    "strategy": "Train on earlier signup cohorts; validate on latest signup-date cohort",
+    "label_window": "April-June 2024",
+    "note": "Cohort validation by signup date, not a later outcome window."
+  },
+  "selected_model_by_holdout_pr_auc": "Random Forest",
+  "validation_observed_churn_rate": 0.10561797752808989,
+  "validation_mean_predicted_risk": 0.20234291145905853,
+  "validation_calibration_gap_pp": 9.672493393096863,
+  "metrics": [
+    {
+      "Model": "Majority-class baseline",
+      "Threshold": 0.5,
+      "N": 445,
+      "Accuracy": 0.8943820224719101,
+      "Precision": 0.0,
+      "Recall": 0.0,
+      "F1": 0.0,
+      "PR_AUC_Average_Precision": 0.10561797752808989,
+      "ROC_AUC": 0.5
+    },
+    {
+      "Model": "Logistic Regression",
+      "Threshold": 0.5,
+      "N": 445,
+      "Accuracy": 0.8966292134831461,
+      "Precision": 0.5098039215686274,
+      "Recall": 0.5531914893617021,
+      "F1": 0.5306122448979592,
+      "PR_AUC_Average_Precision": 0.6000117584508112,
+      "ROC_AUC": 0.8997113225702983
+    },
+    {
+      "Model": "Random Forest",
+      "Threshold": 0.5,
+      "N": 445,
+      "Accuracy": 0.9325842696629213,
+      "Precision": 0.84,
+      "Recall": 0.44680851063829785,
+      "F1": 0.5833333333333334,
+      "PR_AUC_Average_Precision": 0.6989156854119056,
+      "ROC_AUC": 0.8839944402865391
+    }
+  ],
+  "ablation": [
+    {
+      "Model": "Demographics/profile only",
+      "Threshold": 0.5,
+      "N": 445,
+      "Accuracy": 0.8831460674157303,
+      "Precision": 0.0,
+      "Recall": 0.0,
+      "F1": 0.0,
+      "PR_AUC_Average_Precision": 0.10541423065695966,
+      "ROC_AUC": 0.48904094942799103
+    },
+    {
+      "Model": "Behaviour/engagement/support only",
+      "Threshold": 0.5,
+      "N": 445,
+      "Accuracy": 0.8853932584269663,
+      "Precision": 0.46875,
+      "Recall": 0.6382978723404256,
+      "F1": 0.5405405405405406,
+      "PR_AUC_Average_Precision": 0.5658363439222591,
+      "ROC_AUC": 0.898374852988346
+    },
+    {
+      "Model": "All feature groups",
+      "Threshold": 0.5,
+      "N": 445,
+      "Accuracy": 0.8966292134831461,
+      "Precision": 0.5098039215686274,
+      "Recall": 0.5531914893617021,
+      "F1": 0.5306122448979592,
+      "PR_AUC_Average_Precision": 0.6000117584508112,
+      "ROC_AUC": 0.8997113225702983
+    }
+  ],
+  "top_global_drivers": [
+    {
+      "Feature": "RECENT_TRANSACTIONS",
+      "Importance": 0.1654159037439996
+    },
+    {
+      "Feature": "MONTHS_SINCE_LAST_PURCHASE_PRE",
+      "Importance": 0.13734089149804285
+    },
+    {
+      "Feature": "RECENT_SPEND",
+      "Importance": 0.12521286567400228
+    },
+    {
+      "Feature": "RECENT_APP_SESSIONS",
+      "Importance": 0.10333363866806597
+    },
+    {
+      "Feature": "NO_RECENT_ACTIVITY_RECORDS",
+      "Importance": 0.07241144675935716
+    },
+    {
+      "Feature": "SPEND_TREND_RECENT_VS_PRIOR",
+      "Importance": 0.051777738427270924
+    },
+    {
+      "Feature": "ACTIVE_MONTHS_PRE",
+      "Importance": 0.04757027206041105
+    },
+    {
+      "Feature": "TRANSACTIONS_TREND_RECENT_VS_PRIOR",
+      "Importance": 0.04704226752628251
+    },
+    {
+      "Feature": "APP_SESSIONS_PRE",
+      "Importance": 0.03534323684631819
+    },
+    {
+      "Feature": "APP_SESSIONS_TREND_RECENT_VS_PRIOR",
+      "Importance": 0.0340568860818987
+    }
+  ],
+  "retention_scenario_10pct_assumption": [
+    {
+      "Scenario_Population": "Held-out signup-cohort validation population",
+      "Scenario_Population_N": 445,
+      "Targeting_Rule": "Top 20% predicted risk (quantile cutoff; ties included)",
+      "Targeted_Pct": 20.0,
+      "Targeted_Customers": 89,
+      "Assumed_Relative_Risk_Reduction": 0.1,
+      "Baseline_Expected_Churn_Customers": 90.04259559928104,
+      "Validation_Observed_Churn_Customers": 47,
+      "Expected_Churn_Reduction_Customers": 4.304905979908177,
+      "Scenario_Expected_Churn_Customers": 85.73768961937287,
+      "Baseline_Avg_Risk_Pct": 20.234291145905853,
+      "Scenario_Avg_Risk_Pct": 19.266896543679294,
+      "Risk_Reduction_Pct_Points": 0.9673946022265565,
+      "Assumption_Note": "Illustrative relative-risk reduction applied to held-out model probabilities; not a causal estimate or measured treatment effect."
+    }
+  ]
+}

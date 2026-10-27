@@ -1,0 +1,10 @@
+{
+  "cutoff": "2023-07-17",
+  "train_n": 1780,
+  "test_n": 445,
+  "train_churn_rate": 0.3455056179775281,
+  "test_churn_rate": 0.10561797752808989,
+  "strategy": "Train on earlier signup cohorts; validate on latest signup-date cohort",
+  "label_window": "April-June 2024",
+  "note": "Cohort validation by signup date, not a later outcome window."
+}
