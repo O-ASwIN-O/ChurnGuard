@@ -1,5 +1,7 @@
 # ChurnGuard — Customer Churn Prediction
 
+Presentation Video - https://drive.google.com/file/d/1zQMv08Uz7e6lhqbGa1mGqL9gNB0aBvJ_/view?usp=drivesdk
+
 ChurnGuard is a reproducible Python project that analyses FreshBasket Retail loyalty customers, compares churn classifiers, generates customer-level risk rankings, and prepares evidence-based retention recommendations.
 
 ## Business target
