@@ -14,11 +14,11 @@ This controlled sensitivity audit checks whether the saved Logistic Regression w
 - Test customers: 445; observed churn: 29.66%.
 - Random seed: 42; stratified split; test set evaluated once per variant.
 
-| Variant | Threshold | Accuracy | Precision | Recall | F1 | PR-AUC | ROC-AUC | Brier |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| A — Full model | 0.400 | 0.926 | 0.878 | 0.871 | 0.875 | 0.955 | 0.974 | 0.051 |
-| B — Without explicit flag | 0.299 | 0.775 | 0.594 | 0.765 | 0.669 | 0.728 | 0.861 | 0.138 |
-| C — Without recent signals | 0.351 | 0.775 | 0.601 | 0.720 | 0.655 | 0.726 | 0.847 | 0.140 |
+| Model                      |   Threshold |   Validation_F1 |   Accuracy |   Precision |   Recall |    F1 |   PR_AUC |   ROC_AUC |   Brier_Score |   TN |   FP |   FN |   TP |
+|:---------------------------|------------:|----------------:|-----------:|------------:|---------:|------:|---------:|----------:|--------------:|-----:|-----:|-----:|-----:|
+| A - Full model             |       0.4   |           0.935 |      0.926 |       0.878 |    0.871 | 0.875 |    0.955 |     0.974 |         0.051 |  297 |   16 |   17 |  115 |
+| B - Without explicit flag  |       0.299 |           0.745 |      0.775 |       0.594 |    0.765 | 0.669 |    0.728 |     0.861 |         0.138 |  244 |   69 |   31 |  101 |
+| C - Without recent signals |       0.351 |           0.749 |      0.775 |       0.601 |    0.72  | 0.655 |    0.726 |     0.847 |         0.14  |  250 |   63 |   37 |   95 |
 
 ## Effect of removing missingness features
 - Without the explicit flag, F1 falls by 0.206 and PR-AUC falls by 0.227.
@@ -27,7 +27,7 @@ This controlled sensitivity audit checks whether the saved Logistic Regression w
 **Conclusion:** missingness is a strong predictive-shortcut candidate in this dataset. This does not prove leakage, because the missingness appears in the constructed pre-label period. Production-time availability and future stability remain unverified; test on a later independently labelled period before operational use.
 
 ## Churn-label rule reconstruction
-The documented churn rule was reconstructed from raw monthly transaction counts for eligible customers. It flagged **5 label exceptions** for review. This is diagnostic reconstruction, not a source-owner-approved correction, and it does not establish why any label differs.
+The documented churn rule was reconstructed from raw monthly transaction counts for the eligible customers. It flagged **5 label exceptions** for review. This is diagnostic reconstruction, not a source-owner-approved correction, and it does not establish why any label differs.
 
 ## Recommended next steps
 1. Confirm whether absent Jan–Mar records mean no shopping, missing telemetry, or an upstream data issue.

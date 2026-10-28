@@ -16,8 +16,8 @@
   },
   "selected_model_by_holdout_pr_auc": "Random Forest",
   "validation_observed_churn_rate": 0.10561797752808989,
-  "validation_mean_predicted_risk": 0.20234291145905858,
-  "validation_calibration_gap_pp": 9.672493393096868,
+  "validation_mean_predicted_risk": 0.20234291145905856,
+  "validation_calibration_gap_pp": 9.672493393096866,
   "metrics": [
     {
       "Model": "Majority-class baseline",
@@ -138,12 +138,12 @@
       "Targeted_Pct": 20.0,
       "Targeted_Customers": 89,
       "Assumed_Relative_Risk_Reduction": 0.1,
-      "Baseline_Expected_Churn_Customers": 90.04259559928107,
+      "Baseline_Expected_Churn_Customers": 90.04259559928106,
       "Validation_Observed_Churn_Customers": 47,
       "Expected_Churn_Reduction_Customers": 4.304905979908177,
-      "Scenario_Expected_Churn_Customers": 85.7376896193729,
+      "Scenario_Expected_Churn_Customers": 85.73768961937289,
       "Baseline_Avg_Risk_Pct": 20.234291145905857,
-      "Scenario_Avg_Risk_Pct": 19.266896543679305,
+      "Scenario_Avg_Risk_Pct": 19.2668965436793,
       "Risk_Reduction_Pct_Points": 0.9673946022265565,
       "Assumption_Note": "Illustrative relative-risk reduction applied to held-out model probabilities; not a causal estimate or measured treatment effect."
     }
