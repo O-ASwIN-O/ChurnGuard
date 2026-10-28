@@ -1,0 +1,4 @@
+Group,Customers,Stayed,Churned,Churn_Rate_Pct
+All eligible customers,2225,1563,662,29.75280899
+No recent activity records,449,7,442,98.44097996
+Recent activity records present,1776,1556,220,12.38738739

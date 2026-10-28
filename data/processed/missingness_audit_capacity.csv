@@ -1,0 +1,10 @@
+Model,Targeted_Share,Customers_Targeted,Churners_Captured,Precision_At_Capacity,Churn_Recall_At_Capacity,Test_Churners
+A - Full model,0.1,45,45,1,0.3409090909,132
+A - Full model,0.2,89,88,0.9887640449,0.6666666667,132
+A - Full model,0.3,134,118,0.8805970149,0.8939393939,132
+B - Without explicit flag,0.1,45,37,0.8222222222,0.2803030303,132
+B - Without explicit flag,0.2,89,67,0.7528089888,0.5075757576,132
+B - Without explicit flag,0.3,134,86,0.6417910448,0.6515151515,132
+C - Without recent signals,0.1,45,38,0.8444444444,0.2878787879,132
+C - Without recent signals,0.2,89,67,0.7528089888,0.5075757576,132
+C - Without recent signals,0.3,134,88,0.6567164179,0.6666666667,132

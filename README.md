@@ -101,3 +101,19 @@ python src/score_customers.py --input path\to\new_customer_features.csv --output
 ```
 
 The scorer adds a `RECOMMENDED_ACTION`: at or above its saved threshold it suggests **Send a personalized coupon**; below it suggests **Continue regular engagement**. This is a simple model-based recommendation, not an automatic coupon send or eligibility check. The notebook's risk scores are not independently validated for operational decisions; test on a later labeled period and run a controlled pilot before using them in a campaign.
+
+
+## Missingness sensitivity audit
+
+The standalone audit checks whether the saved Logistic Regression model relies heavily on absent January–March 2024 activity records. It compares three Logistic Regression variants using the same stratified 60/20/20 split, selects thresholds on validation data, and evaluates each variant once on the untouched test set.
+
+- Script: `src/audit_missingness.py`
+- Test metrics: `data/processed/missingness_audit_metrics.csv`
+- Missingness profile: `data/processed/missingness_audit_missingness_profile.csv`
+- Risk-ranking capacity: `data/processed/missingness_audit_capacity.csv`
+- Comparison chart: `figures/missingness_audit_comparison.png`
+- Report: `reports/MISSINGNESS_AUDIT.md`
+
+Audit results: the full model records F1 0.875 and PR-AUC 0.955. Removing the explicit missingness flag reduces F1 to 0.669 and PR-AUC to 0.728; removing all recent-activity signals reduces them to 0.655 and 0.726. There are 449 customers with no Jan–Mar activity records, and 442 (98.44%) are labelled churned. This is a strong predictive-shortcut candidate, **not proof of leakage**; real prediction-time availability and future stability remain unverified. Reconstructing the documented churn rule from raw transactions also flags five label exceptions for review.
+
+The GitHub Actions workflow runs this audit and commits the generated CSVs, chart and report to the repository. Keep this audit separate from the main signup-cohort model comparison and the notebook's random-split scorer evaluation.
